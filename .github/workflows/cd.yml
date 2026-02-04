@@ -1,0 +1,80 @@
+name: CD Metradingplat Notificaciones
+
+on:
+  workflow_run:
+    workflows: ["CI Metradingplat Notificaciones"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Create Docker Network
+        run: |
+          docker network create metradingplat-network || echo "Network already exists"
+
+      - name: Infrastructure Diagnosis & Cleanup
+        run: |
+          echo "--- DISK SPACE CHECK ---"
+          df -h
+          echo "--- CLEANING SHARED BASE IMAGES ---"
+          docker image rm -f eclipse-temurin:21-jdk eclipse-temurin:21-jre-alpine || true
+          echo "--- CLEANING SERVICE METADATA ---"
+          docker rm -f notification-service || true
+          docker image rm -f virtud142/metradingplat_notification_service:latest || true
+
+      - name: Pull Application Image (with Retry Logic)
+        run: |
+          echo "Attempting to pull image with auto-retry for stability..."
+          for i in 1 2 3; do
+            docker pull virtud142/metradingplat_notification_service:latest && exit 0 || \
+            (echo "Attempt $i failed, waiting 10s..." && sleep 10)
+          done
+          echo "All pull attempts failed. Docker daemon might need a manual restart."
+          exit 1
+
+      - name: Delete Old Application Container
+        run: docker rm -f notification-service || true
+
+      - name: Run Application Container
+        run: |
+          docker run -d \
+            -p 8085:8085 \
+            --name "notification-service" \
+            --network "metradingplat-network" \
+            --restart "unless-stopped" \
+            --label project="metradingplat" \
+            --label service="notification-service" \
+            -e SPRING_PROFILES_ACTIVE="prod" \
+            -e KAFKA_BOOTSTRAP_SERVERS="kafka:29092" \
+            -e EUREKA_HOST="directory" \
+            virtud142/metradingplat_notification_service:latest
+
+      - name: Clean Old Images of This Service
+        run: |
+          echo "Cleaning old images for notification-service service..."
+          CURRENT_IMAGE=$(docker inspect notification-service --format='{{.Image}}' 2>/dev/null || echo "")
+          if [ -n "$CURRENT_IMAGE" ]; then
+            docker images --filter "label=service=notification-service" --format "{{.ID}}" | while read img; do
+              if [ "$img" != "${CURRENT_IMAGE:7:12}" ]; then
+                echo "Removing old image: $img"
+                docker rmi -f $img 2>/dev/null || true
+              fi
+            done
+          fi
+          docker images virtud142/metradingplat_notification_service --format "{{.ID}} {{.Tag}}" | grep -v "latest" | awk '{print $1}' | xargs -r docker rmi -f 2>/dev/null || true
+
+      - name: Clean Stopped Containers of This Service
+        run: |
+          echo "Cleaning stopped containers for notification-service service..."
+          docker ps -a --filter "label=service=notification-service" --filter "status=exited" -q | xargs -r docker rm 2>/dev/null || true
+
+      - name: Final Status Check
+        run: |
+          sleep 5
+          docker ps | grep notification-service
+          echo "--- LAST 20 LINES OF LOGS ---"
+          docker logs --tail 20 notification-service
