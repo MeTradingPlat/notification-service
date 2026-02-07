@@ -27,6 +27,15 @@ public class GestionarNotificacionesCUAdapter implements GestionarNotificaciones
     }
 
     @Override
+    public void procesarNotificacionEstadoEscaner(Notificacion objNotificacion) {
+        log.info("Procesando notificacion de estado escaner: [{}] {}",
+            objNotificacion.getIdEscaner(), objNotificacion.getMensaje());
+
+        objNotificacion.setTipo("SCANNER_STATE");
+        this.objEmitirNotificacionIntPort.emitir(objNotificacion);
+    }
+
+    @Override
     public Flux<Notificacion> obtenerStreamNotificaciones() {
         return this.objEmitirNotificacionIntPort.obtenerStream();
     }

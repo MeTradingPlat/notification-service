@@ -8,6 +8,8 @@ public interface GestionarNotificacionesCUIntPort {
 
     void procesarNotificacionLog(Notificacion objNotificacion);
 
+    void procesarNotificacionEstadoEscaner(Notificacion objNotificacion);
+
     Flux<Notificacion> obtenerStreamNotificaciones();
 
     Flux<Notificacion> obtenerStreamNotificacionesPorEscaner(Long idEscaner);
