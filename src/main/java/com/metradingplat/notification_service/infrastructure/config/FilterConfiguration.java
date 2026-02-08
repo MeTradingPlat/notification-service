@@ -14,10 +14,26 @@ import org.springframework.context.annotation.Configuration;
 public class FilterConfiguration {
 
     /**
+     * Crea el bean del filtro de autenticación.
+     */
+    @Bean
+    public SseAuthenticationFilter sseAuthenticationFilter() {
+        return new SseAuthenticationFilter();
+    }
+
+    /**
+     * Crea el bean del filtro de rate limiting.
+     */
+    @Bean
+    public RateLimitFilter rateLimitFilter() {
+        return new RateLimitFilter();
+    }
+
+    /**
      * Registra el filtro de autenticación con prioridad 1 (ejecuta primero).
      */
     @Bean
-    public FilterRegistrationBean<SseAuthenticationFilter> sseAuthenticationFilter(SseAuthenticationFilter filter) {
+    public FilterRegistrationBean<SseAuthenticationFilter> sseAuthenticationFilterRegistration(SseAuthenticationFilter filter) {
         FilterRegistrationBean<SseAuthenticationFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
         registration.addUrlPatterns("/api/notificaciones/stream/*");
@@ -30,7 +46,7 @@ public class FilterConfiguration {
      * Registra el filtro de rate limiting con prioridad 2 (ejecuta después de autenticación).
      */
     @Bean
-    public FilterRegistrationBean<RateLimitFilter> rateLimitFilter(RateLimitFilter filter) {
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
         FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
         registration.addUrlPatterns("/api/notificaciones/stream/*");
