@@ -8,7 +8,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -20,8 +19,9 @@ import java.io.IOException;
  * - JWT (JSON Web Tokens) para autenticación stateless
  * - Spring Security con OAuth2/JWT
  * - Integración con tu sistema de autenticación existente
+ *
+ * Este filtro se registra como bean en FilterConfiguration.java
  */
-@Component
 public class SseAuthenticationFilter implements Filter {
 
     @Value("${sse.auth.enabled:true}")

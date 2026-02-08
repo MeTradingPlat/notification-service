@@ -9,7 +9,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.stereotype.Component;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -21,8 +20,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * Filtro de Rate Limiting para endpoints SSE.
  * Limita a 10 conexiones SSE por IP cada minuto.
+ *
+ * Este filtro se registra como bean en FilterConfiguration.java
  */
-@Component
 public class RateLimitFilter implements Filter {
 
     // Cache de buckets por IP (expira después de 10 minutos de inactividad)
