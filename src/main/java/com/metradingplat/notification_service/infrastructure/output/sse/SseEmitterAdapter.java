@@ -1,10 +1,16 @@
 package com.metradingplat.notification_service.infrastructure.output.sse;
 
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.springframework.stereotype.Service;
 
 import com.metradingplat.notification_service.application.output.EmitirNotificacionIntPort;
 import com.metradingplat.notification_service.domain.models.Notificacion;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -13,7 +19,11 @@ import reactor.core.publisher.Sinks;
 @Slf4j
 public class SseEmitterAdapter implements EmitirNotificacionIntPort {
 
+    private static final int MAX_BUFFER_SIZE = 500;
+
     private final Sinks.Many<Notificacion> sink;
+    private final AtomicLong eventIdCounter = new AtomicLong();
+    private final ConcurrentLinkedDeque<EventoBuffered> buffer = new ConcurrentLinkedDeque<>();
 
     public SseEmitterAdapter() {
         this.sink = Sinks.many().multicast().onBackpressureBuffer();
@@ -21,7 +31,15 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
 
     @Override
     public void emitir(Notificacion objNotificacion) {
-        log.debug("Emitiendo notificacion SSE: [{}] {}", objNotificacion.getNivel(), objNotificacion.getTitulo());
+        long eventId = this.eventIdCounter.incrementAndGet();
+        log.debug("Emitiendo notificacion SSE [id={}]: [{}] {}", eventId, objNotificacion.getNivel(), objNotificacion.getTitulo());
+
+        // Guardar en buffer circular para reconexiones
+        this.buffer.addLast(new EventoBuffered(eventId, objNotificacion));
+        while (this.buffer.size() > MAX_BUFFER_SIZE) {
+            this.buffer.pollFirst();
+        }
+
         Sinks.EmitResult result = this.sink.tryEmitNext(objNotificacion);
         if (result.isFailure()) {
             log.warn("Fallo al emitir notificacion: {}", result);
@@ -37,5 +55,29 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
     public Flux<Notificacion> obtenerStreamPorEscaner(Long idEscaner) {
         return this.sink.asFlux()
                 .filter(notificacion -> idEscaner.equals(notificacion.getIdEscaner()));
+    }
+
+    /**
+     * Obtiene el siguiente ID de evento secuencial.
+     */
+    public long getNextEventId() {
+        return this.eventIdCounter.incrementAndGet();
+    }
+
+    /**
+     * Recupera eventos del buffer que ocurrieron después del eventId dado.
+     * Usado para reconexiones con Last-Event-Id.
+     */
+    public List<EventoBuffered> obtenerEventosDesde(long fromEventId) {
+        return this.buffer.stream()
+                .filter(e -> e.getEventId() > fromEventId)
+                .toList();
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class EventoBuffered {
+        private final long eventId;
+        private final Notificacion notificacion;
     }
 }
