@@ -4,7 +4,6 @@ import java.time.Duration;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -24,11 +23,6 @@ import reactor.core.publisher.Flux;
 
 @RestController
 @RequestMapping("/api/notificaciones")
-@CrossOrigin(
-    origins = {"https://metradingplat.com", "https://www.metradingplat.com", "http://localhost:4200"},
-    allowCredentials = "true",
-    allowedHeaders = "*"
-)
 @RequiredArgsConstructor
 public class NotificacionRestController {
 
