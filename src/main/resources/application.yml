@@ -11,8 +11,8 @@ spring:
 # Configuración de autenticación SSE
 sse:
   auth:
-    enabled: ${SSE_AUTH_ENABLED:true}  # false para desarrollo, true para producción
-    shared-secret: ${SSE_AUTH_TOKEN:CHANGE_THIS_IN_PRODUCTION}  # Cambiar en producción con variable de entorno
+    enabled: ${SSE_AUTH_ENABLED:true} # false para desarrollo, true para producción
+    shared-secret: ${SSE_AUTH_TOKEN:CHANGE_THIS_IN_PRODUCTION} # Cambiar en producción con variable de entorno
 
 server:
   port: 8085
