@@ -43,11 +43,13 @@ public class NotificacionRestController {
         // Header tiene prioridad (auto-reconnect del browser), luego query param (reconexión manual)
         String lastEventId = lastEventIdHeader != null ? lastEventIdHeader : lastEventIdParam;
 
-        // Heartbeat cada 30s - mantiene viva la conexión con Cloudflare proxy
-        Flux<ServerSentEvent<NotificacionDTORespuesta>> heartbeat = Flux.interval(Duration.ofSeconds(30))
-                .map(i -> ServerSentEvent.<NotificacionDTORespuesta>builder()
-                        .comment("heartbeat")
-                        .build());
+        // Heartbeat: primero inmediato (evita timeout async de Tomcat), luego cada 30s
+        Flux<ServerSentEvent<NotificacionDTORespuesta>> heartbeat = Flux.concat(
+                Flux.just(ServerSentEvent.<NotificacionDTORespuesta>builder().comment("connected").build()),
+                Flux.interval(Duration.ofSeconds(30))
+                        .map(i -> ServerSentEvent.<NotificacionDTORespuesta>builder()
+                                .comment("heartbeat")
+                                .build()));
 
         // Eventos perdidos durante reconexión (si hay Last-Event-Id)
         Flux<ServerSentEvent<NotificacionDTORespuesta>> missed = Flux.empty();
@@ -88,10 +90,12 @@ public class NotificacionRestController {
 
         String lastEventId = lastEventIdHeader != null ? lastEventIdHeader : lastEventIdParam;
 
-        Flux<ServerSentEvent<NotificacionDTORespuesta>> heartbeat = Flux.interval(Duration.ofSeconds(30))
-                .map(i -> ServerSentEvent.<NotificacionDTORespuesta>builder()
-                        .comment("heartbeat")
-                        .build());
+        Flux<ServerSentEvent<NotificacionDTORespuesta>> heartbeat = Flux.concat(
+                Flux.just(ServerSentEvent.<NotificacionDTORespuesta>builder().comment("connected").build()),
+                Flux.interval(Duration.ofSeconds(30))
+                        .map(i -> ServerSentEvent.<NotificacionDTORespuesta>builder()
+                                .comment("heartbeat")
+                                .build()));
 
         Flux<ServerSentEvent<NotificacionDTORespuesta>> missed = Flux.empty();
         if (lastEventId != null && !lastEventId.isEmpty()) {

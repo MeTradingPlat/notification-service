@@ -29,6 +29,11 @@ public class RestApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Error> handleGenericException(HttpServletRequest req, Exception ex) {
+        // Si el request es SSE, no intentar serializar Error como text/event-stream
+        String accept = req.getHeader("Accept");
+        if (accept != null && accept.contains("text/event-stream")) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
         return createErrorResponse(
                 CodigoError.ERROR_GENERICO,
                 HttpStatus.INTERNAL_SERVER_ERROR,
