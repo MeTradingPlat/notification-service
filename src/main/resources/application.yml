@@ -14,6 +14,10 @@ sse:
     enabled: ${SSE_AUTH_ENABLED:false}
     shared-secret: ${SSE_AUTH_TOKEN:CHANGE_THIS_IN_PRODUCTION}
 
+logging:
+  level:
+    "[com.netflix.discovery.shared.resolver.aws.ConfigClusterResolver]": WARN
+
 server:
   port: 8085
 
