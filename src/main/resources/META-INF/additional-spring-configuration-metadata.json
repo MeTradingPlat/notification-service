@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "sse.auth.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Habilita autenticación para endpoints SSE. En producción debería ser true.",
+      "defaultValue": false
+    },
+    {
+      "name": "sse.auth.shared-secret",
+      "type": "java.lang.String",
+      "description": "Token secreto compartido para autenticar requests SSE. DEBE cambiarse en producción.",
+      "defaultValue": "CHANGE_THIS_IN_PRODUCTION"
+    }
+  ]
+}
