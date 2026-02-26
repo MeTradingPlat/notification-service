@@ -42,10 +42,12 @@ jobs:
       - name: Run Application Container
         run: |
           docker run -d \
-            -p 8085:8085 \
+            -p 127.0.0.1:8085:8085 \
             --name "notification-service" \
             --network "metradingplat-network" \
             --restart "unless-stopped" \
+            --memory "384m" \
+            --memory-swap "384m" \
             --label project="metradingplat" \
             --label service="notification-service" \
             -e SPRING_PROFILES_ACTIVE="prod" \
