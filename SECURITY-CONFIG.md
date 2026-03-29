@@ -69,9 +69,9 @@ HTTP Status: `401 Unauthorized`
 ### 3. CORS Configurado
 
 **Orígenes permitidos**:
-- `https://metradingplat.com`
-- `https://www.metradingplat.com`
-- `https://sse.metradingplat.com` ⬅️ **Subdominio para SSE sin timeout de Cloudflare**
+- `https://metradingplat.net`
+- `https://www.metradingplat.net`
+- `https://sse.metradingplat.net` ⬅️ **Subdominio para SSE sin timeout de Cloudflare**
 - `http://localhost:4200` (desarrollo)
 
 **Archivo**: `NotificacionRestController.java`
@@ -112,7 +112,7 @@ export const environment = {
 ```typescript
 export const environment = {
   production: true,
-  apiUrl: 'https://sse.metradingplat.com/api',  // ⬅️ Usar subdominio SSE
+  apiUrl: 'https://sse.metradingplat.net/api',  // ⬅️ Usar subdominio SSE
   sseAuthToken: 'CHANGE_THIS_IN_PRODUCTION'     // ⬅️ Debe coincidir con backend
 };
 ```
@@ -163,10 +163,10 @@ sse:
 1. Crear registro DNS en Cloudflare:
    - Type: `CNAME`
    - Name: `sse`
-   - Target: `metradingplat.com`
+   - Target: `metradingplat.net`
    - **Proxy status: DNS only** ⛅ (nube gris)
 
-2. Esto crea: `sse.metradingplat.com` sin timeout de Cloudflare
+2. Esto crea: `sse.metradingplat.net` sin timeout de Cloudflare
 
 ### Paso 4: Reiniciar Servicios
 
@@ -191,7 +191,7 @@ export SSE_TOKEN="tu_token_secreto_aqui"
 
 ### Test 1: Sin Token (debe fallar)
 ```bash
-curl -N https://sse.metradingplat.com/api/notificaciones/stream/escaner/1
+curl -N https://sse.metradingplat.net/api/notificaciones/stream/escaner/1
 ```
 **Esperado**: 401 Unauthorized
 ```json
@@ -200,7 +200,7 @@ curl -N https://sse.metradingplat.com/api/notificaciones/stream/escaner/1
 
 ### Test 2: Con Token Válido
 ```bash
-curl -N "https://sse.metradingplat.com/api/notificaciones/stream/escaner/1?token=${SSE_TOKEN}"
+curl -N "https://sse.metradingplat.net/api/notificaciones/stream/escaner/1?token=${SSE_TOKEN}"
 ```
 **Esperado**: Stream SSE funcionando ✅
 
@@ -208,7 +208,7 @@ curl -N "https://sse.metradingplat.com/api/notificaciones/stream/escaner/1?token
 Hacer 11 conexiones rápidas desde la misma IP:
 ```bash
 for i in {1..11}; do
-  curl -N "https://sse.metradingplat.com/api/notificaciones/stream/escaner/1?token=${SSE_TOKEN}" &
+  curl -N "https://sse.metradingplat.net/api/notificaciones/stream/escaner/1?token=${SSE_TOKEN}" &
 done
 ```
 **Esperado**: La petición #11 debe retornar 429 Too Many Requests
@@ -286,7 +286,7 @@ private boolean isValidToken(String token) {
 
 ### Problema: EventSource error después de ~100 segundos
 - **Causa**: Cloudflare timeout
-- **Solución**: Usar subdominio `sse.metradingplat.com` con proxy deshabilitado
+- **Solución**: Usar subdominio `sse.metradingplat.net` con proxy deshabilitado
 
 ---
 

@@ -76,6 +76,8 @@ public class SseAuthenticationFilter implements Filter {
      * IMPLEMENTACIÓN BÁSICA: Compara con un secreto compartido.
      *
      * TODO: Reemplazar con validación JWT o integración con tu sistema de auth.
+     * NOTA: Esta autenticación es para que TU frontend se conecte a ESTE servicio, 
+     * no tiene relación con Tastytrade ni dxLink.
      * Ejemplo con JWT:
      * - Decodificar el token JWT
      * - Verificar firma
@@ -89,6 +91,7 @@ public class SseAuthenticationFilter implements Filter {
 
         // Implementación básica: comparar con secreto compartido
         // TODO: Reemplazar con JWT validation o llamada a servicio de autenticación
+        // (Esto es solo para validar la conexión de tus clientes internos/frontend)
         return sharedSecret.equals(token);
     }
 }
