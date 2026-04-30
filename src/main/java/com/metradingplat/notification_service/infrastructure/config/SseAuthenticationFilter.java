@@ -71,27 +71,18 @@ public class SseAuthenticationFilter implements Filter {
     }
 
     /**
-     * Valida el token.
+     * Valida el token estático si sse.auth.enabled es true.
      *
-     * IMPLEMENTACIÓN BÁSICA: Compara con un secreto compartido.
-     *
-     * TODO: Reemplazar con validación JWT o integración con tu sistema de auth.
-     * NOTA: Esta autenticación es para que TU frontend se conecte a ESTE servicio, 
-     * no tiene relación con Tastytrade ni dxLink.
-     * Ejemplo con JWT:
-     * - Decodificar el token JWT
-     * - Verificar firma
-     * - Verificar expiración
-     * - Verificar claims (permisos, usuario, etc.)
+     * NOTA IMPORTANTE: La validación real JWT ocurre ahora a nivel del API Gateway.
+     * Este filtro solo existe como fallback de seguridad a nivel interno si se accede 
+     * directamente al microservicio saltándose el Gateway.
      */
     private boolean isValidToken(String token) {
         if (token == null || token.isEmpty()) {
             return false;
         }
 
-        // Implementación básica: comparar con secreto compartido
-        // TODO: Reemplazar con JWT validation o llamada a servicio de autenticación
-        // (Esto es solo para validar la conexión de tus clientes internos/frontend)
+        // Implementación básica: comparar con secreto compartido (Fallback)
         return sharedSecret.equals(token);
     }
 }
