@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/api/notificaciones")
+@RequestMapping("/notificaciones")
 @RequiredArgsConstructor
 public class NotificacionRestController {
 

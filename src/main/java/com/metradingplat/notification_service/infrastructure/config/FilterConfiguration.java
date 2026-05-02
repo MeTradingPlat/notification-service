@@ -36,7 +36,7 @@ public class FilterConfiguration {
     public FilterRegistrationBean<SseAuthenticationFilter> sseAuthenticationFilterRegistration(SseAuthenticationFilter filter) {
         FilterRegistrationBean<SseAuthenticationFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
-        registration.addUrlPatterns("/api/notificaciones/stream/*");
+        registration.addUrlPatterns("/notificaciones/stream/*");
         registration.setOrder(1); // Ejecuta primero
         registration.setName("SseAuthenticationFilter");
         return registration;
@@ -49,7 +49,7 @@ public class FilterConfiguration {
     public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
         FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
-        registration.addUrlPatterns("/api/notificaciones/stream/*");
+        registration.addUrlPatterns("/notificaciones/stream/*");
         registration.setOrder(2); // Ejecuta después de autenticación
         registration.setName("RateLimitFilter");
         return registration;
