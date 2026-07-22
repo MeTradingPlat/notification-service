@@ -26,7 +26,7 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
     private final ConcurrentLinkedDeque<EventoBuffered> buffer = new ConcurrentLinkedDeque<>();
 
     public SseEmitterAdapter() {
-        this.sink = Sinks.many().multicast().onBackpressureBuffer(10000);
+        this.sink = Sinks.many().multicast().onBackpressureDrop();
     }
 
     @Override
