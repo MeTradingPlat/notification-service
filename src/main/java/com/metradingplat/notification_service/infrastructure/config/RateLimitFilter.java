@@ -69,10 +69,9 @@ public class RateLimitFilter implements Filter {
      * Crea un nuevo bucket con límite de 10 peticiones por minuto.
      */
     private Bucket createNewBucket() {
-        // Límite: 10 conexiones SSE por minuto
         Bandwidth limit = Bandwidth.builder()
-                .capacity(10)
-                .refillIntervally(10, Duration.ofMinutes(1))
+                .capacity(100)
+                .refillIntervally(100, Duration.ofMinutes(1))
                 .build();
         return Bucket.builder()
                 .addLimit(limit)
