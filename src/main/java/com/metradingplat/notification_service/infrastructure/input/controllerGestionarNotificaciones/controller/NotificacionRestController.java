@@ -69,10 +69,14 @@ public class NotificacionRestController {
         // Stream en vivo de notificaciones con IDs
         Flux<ServerSentEvent<NotificacionDTORespuesta>> live = this.objGestionarNotificacionesCUInt
                 .obtenerStreamNotificaciones()
-                .map(this.objMapper::mappearDeNotificacionARespuesta)
-                .map(n -> ServerSentEvent.<NotificacionDTORespuesta>builder(n)
-                        .id(String.valueOf(this.objSseEmitter.getNextEventId()))
-                        .build());
+                .map(notificacion -> {
+                    long eventId = this.objSseEmitter.getNextEventId();
+                    this.objSseEmitter.bufferEvent(eventId, notificacion);
+                    return ServerSentEvent.<NotificacionDTORespuesta>builder(
+                            this.objMapper.mappearDeNotificacionARespuesta(notificacion))
+                            .id(String.valueOf(eventId))
+                            .build();
+                });
 
         // Primero envía eventos perdidos, luego mezcla live + heartbeat
         return Flux.concat(missed, Flux.merge(heartbeat, live));
@@ -114,10 +118,14 @@ public class NotificacionRestController {
 
         Flux<ServerSentEvent<NotificacionDTORespuesta>> live = this.objGestionarNotificacionesCUInt
                 .obtenerStreamNotificacionesPorEscaner(idEscaner)
-                .map(this.objMapper::mappearDeNotificacionARespuesta)
-                .map(n -> ServerSentEvent.<NotificacionDTORespuesta>builder(n)
-                        .id(String.valueOf(this.objSseEmitter.getNextEventId()))
-                        .build());
+                .map(notificacion -> {
+                    long eventId = this.objSseEmitter.getNextEventId();
+                    this.objSseEmitter.bufferEvent(eventId, notificacion);
+                    return ServerSentEvent.<NotificacionDTORespuesta>builder(
+                            this.objMapper.mappearDeNotificacionARespuesta(notificacion))
+                            .id(String.valueOf(eventId))
+                            .build();
+                });
 
         return Flux.concat(missed, Flux.merge(heartbeat, live));
     }
