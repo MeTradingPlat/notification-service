@@ -13,6 +13,5 @@ public interface NotificacionKafkaMapper {
     @Mapping(target = "id", expression = "java(String.valueOf(dto.getIdRegistroLog()))")
     @Mapping(target = "tipo", constant = "LOG")
     @Mapping(target = "titulo", ignore = true)
-    @Mapping(target = "metadatos", ignore = true)
     Notificacion deDTOADominio(LogNotificacionDTOPeticion dto);
 }
