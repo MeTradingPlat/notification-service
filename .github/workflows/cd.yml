@@ -69,6 +69,7 @@ jobs:
             --name "notification-service" \
             --network "metradingplat-network" \
             --restart "unless-stopped" \
+            --cpus "0.5" \
             --memory "384m" \
             --memory-swap "384m" \
             --label project="metradingplat" \
