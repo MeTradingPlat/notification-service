@@ -19,8 +19,10 @@ import com.metradingplat.notification_service.infrastructure.output.sse.SseEmitt
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 
+@Slf4j
 @RestController
 @RequestMapping("/notificaciones")
 @RequiredArgsConstructor
@@ -79,7 +81,10 @@ public class NotificacionRestController {
                 });
 
         // Primero envía eventos perdidos, luego mezcla live + heartbeat
-        return Flux.concat(missed, Flux.merge(heartbeat, live));
+        return Flux.concat(missed, Flux.merge(heartbeat, live))
+                .doOnError(e -> log.error("SSE /stream terminado por error", e))
+                .doOnCancel(() -> log.warn("SSE /stream cancelado por el cliente"))
+                .doOnComplete(() -> log.warn("SSE /stream completo inesperadamente (deberia ser infinito)"));
     }
 
     /**
@@ -127,6 +132,10 @@ public class NotificacionRestController {
                             .build();
                 });
 
-        return Flux.concat(missed, Flux.merge(heartbeat, live));
+        return Flux.concat(missed, Flux.merge(heartbeat, live))
+                .doOnError(e -> log.error("SSE /stream/escaner/{} terminado por error", idEscaner, e))
+                .doOnCancel(() -> log.warn("SSE /stream/escaner/{} cancelado por el cliente", idEscaner))
+                .doOnComplete(() -> log.warn(
+                        "SSE /stream/escaner/{} completo inesperadamente (deberia ser infinito)", idEscaner));
     }
 }

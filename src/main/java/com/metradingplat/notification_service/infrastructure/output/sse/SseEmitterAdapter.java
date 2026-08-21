@@ -32,8 +32,16 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
     @Override
     public void emitir(Notificacion objNotificacion) {
         log.debug("Emitiendo notificacion SSE: [{}] {}", objNotificacion.getNivel(), objNotificacion.getTitulo());
-        this.sink.emitNext(objNotificacion, (signalType, emitResult) ->
-                emitResult == Sinks.EmitResult.FAIL_NON_SERIALIZED);
+        this.sink.emitNext(objNotificacion, (signalType, emitResult) -> {
+            if (emitResult == Sinks.EmitResult.FAIL_NON_SERIALIZED) {
+                return true;
+            }
+            if (emitResult != Sinks.EmitResult.FAIL_ZERO_SUBSCRIBER) {
+                log.warn("Fallo emitiendo notificacion SSE: [{}] {} -> {}",
+                        objNotificacion.getNivel(), objNotificacion.getTitulo(), emitResult);
+            }
+            return false;
+        });
     }
 
     public void bufferEvent(long eventId, Notificacion objNotificacion) {
