@@ -26,7 +26,18 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
     private final ConcurrentLinkedDeque<EventoBuffered> buffer = new ConcurrentLinkedDeque<>();
 
     public SseEmitterAdapter() {
-        this.sink = Sinks.many().multicast().directBestEffort();
+        // directBestEffort() tiene muy poco margen para absorber una rafaga
+        // de emisiones (confirmado en vivo el 2026-08-22:
+        // reactor.core.Exceptions$OverflowException en emitNext apenas
+        // llegaban varias notificaciones casi juntas, ej. varios escaneres
+        // cambiando de estado en milisegundos) -- y a diferencia de un
+        // simple valor perdido, esa excepcion termina el sink entero con
+        // error, dejando a CUALQUIER suscriptor (incluido uno que se acabe
+        // de conectar) recibiendo el mismo error de inmediato hasta el
+        // proximo reinicio del servicio. onBackpressureBuffer() absorbe
+        // rafagas reales con una cola acotada (mismo tamano que el buffer de
+        // reconexion de mas abajo) en vez de fallar por un pico momentaneo.
+        this.sink = Sinks.many().multicast().onBackpressureBuffer(MAX_BUFFER_SIZE);
     }
 
     @Override
