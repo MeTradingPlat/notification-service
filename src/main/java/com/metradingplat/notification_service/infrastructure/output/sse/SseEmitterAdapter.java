@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Service;
 
 import com.metradingplat.notification_service.application.output.EmitirNotificacionIntPort;
+import com.metradingplat.notification_service.domain.models.EventoNotificado;
 import com.metradingplat.notification_service.domain.models.Notificacion;
 
 import lombok.AllArgsConstructor;
@@ -21,7 +22,7 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
 
     private static final int MAX_BUFFER_SIZE = 500;
 
-    private final Sinks.Many<Notificacion> sink;
+    private final Sinks.Many<EventoNotificado> sink;
     private final AtomicLong eventIdCounter = new AtomicLong();
     private final ConcurrentLinkedDeque<EventoBuffered> buffer = new ConcurrentLinkedDeque<>();
 
@@ -43,7 +44,19 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
     @Override
     public void emitir(Notificacion objNotificacion) {
         log.debug("Emitiendo notificacion SSE: [{}] {}", objNotificacion.getNivel(), objNotificacion.getTitulo());
-        this.sink.emitNext(objNotificacion, (signalType, emitResult) -> {
+        // El id y el buffer viven AQUI, en la emision, no en el .map() de cada
+        // suscriptor del endpoint SSE: con el buffer en el map por-suscriptor,
+        // un evento emitido sin ningun suscriptor activo (desconexion del
+        // frontend, o la conexion ya cancelada) jamas se numeraba ni se
+        // buffereaba, y el replay por Last-Event-Id no tenia nada que
+        // reenviar -- las senales generadas durante el hueco se perdian para
+        // siempre (confirmado en vivo el 2026-08-24: 270 FAIL_CANCELLED,
+        // incluido el primer lote de 169 senales del escaner 'volumen test').
+        // Ahora cada evento queda en el buffer de reconexion SIEMPRE, haya o
+        // no suscriptores en ese momento.
+        long eventId = this.eventIdCounter.incrementAndGet();
+        this.bufferEvent(eventId, objNotificacion);
+        this.sink.emitNext(new EventoNotificado(eventId, objNotificacion), (signalType, emitResult) -> {
             if (emitResult == Sinks.EmitResult.FAIL_NON_SERIALIZED) {
                 return true;
             }
@@ -63,21 +76,14 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
     }
 
     @Override
-    public Flux<Notificacion> obtenerStream() {
+    public Flux<EventoNotificado> obtenerStream() {
         return this.sink.asFlux();
     }
 
     @Override
-    public Flux<Notificacion> obtenerStreamPorEscaner(Long idEscaner) {
+    public Flux<EventoNotificado> obtenerStreamPorEscaner(Long idEscaner) {
         return this.sink.asFlux()
-                .filter(notificacion -> idEscaner.equals(notificacion.getIdEscaner()));
-    }
-
-    /**
-     * Obtiene el siguiente ID de evento secuencial.
-     */
-    public long getNextEventId() {
-        return this.eventIdCounter.incrementAndGet();
+                .filter(evento -> idEscaner.equals(evento.getNotificacion().getIdEscaner()));
     }
 
     /**

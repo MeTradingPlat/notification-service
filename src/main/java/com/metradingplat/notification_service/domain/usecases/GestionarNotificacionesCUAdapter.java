@@ -6,7 +6,6 @@ import com.metradingplat.notification_service.domain.models.Notificacion;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -33,16 +32,6 @@ public class GestionarNotificacionesCUAdapter implements GestionarNotificaciones
 
         objNotificacion.setTipo("SCANNER_STATE");
         this.objEmitirNotificacionIntPort.emitir(objNotificacion);
-    }
-
-    @Override
-    public Flux<Notificacion> obtenerStreamNotificaciones() {
-        return this.objEmitirNotificacionIntPort.obtenerStream();
-    }
-
-    @Override
-    public Flux<Notificacion> obtenerStreamNotificacionesPorEscaner(Long idEscaner) {
-        return this.objEmitirNotificacionIntPort.obtenerStreamPorEscaner(idEscaner);
     }
 
     private String generarTitulo(Notificacion notificacion) {

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.metradingplat.notification_service.application.input.GestionarNotificacionesCUIntPort;
 import com.metradingplat.notification_service.infrastructure.input.controllerGestionarNotificaciones.DTOAnswer.NotificacionDTORespuesta;
 import com.metradingplat.notification_service.infrastructure.input.controllerGestionarNotificaciones.mapper.NotificacionMapperInfraestructuraDominio;
 import com.metradingplat.notification_service.infrastructure.output.sse.SseEmitterAdapter;
@@ -28,7 +27,6 @@ import reactor.core.publisher.Flux;
 @RequiredArgsConstructor
 public class NotificacionRestController {
 
-    private final GestionarNotificacionesCUIntPort objGestionarNotificacionesCUInt;
     private final NotificacionMapperInfraestructuraDominio objMapper;
     private final SseEmitterAdapter objSseEmitter;
 
@@ -68,17 +66,16 @@ public class NotificacionRestController {
             }
         }
 
-        // Stream en vivo de notificaciones con IDs
-        Flux<ServerSentEvent<NotificacionDTORespuesta>> live = this.objGestionarNotificacionesCUInt
-                .obtenerStreamNotificaciones()
-                .map(notificacion -> {
-                    long eventId = this.objSseEmitter.getNextEventId();
-                    this.objSseEmitter.bufferEvent(eventId, notificacion);
-                    return ServerSentEvent.<NotificacionDTORespuesta>builder(
-                            this.objMapper.mappearDeNotificacionARespuesta(notificacion))
-                            .id(String.valueOf(eventId))
-                            .build();
-                });
+        // Stream en vivo de notificaciones con IDs -- el id y el buffer de
+        // reconexion ya vienen asignados por el adaptador en emitir() (ver
+        // SseEmitterAdapter): el id es UNO por evento, no uno por suscriptor,
+        // y los eventos emitidos sin suscriptores activos igual quedan en el
+        // buffer para el replay por Last-Event-Id.
+        Flux<ServerSentEvent<NotificacionDTORespuesta>> live = this.objSseEmitter.obtenerStream()
+                .map(evento -> ServerSentEvent.<NotificacionDTORespuesta>builder(
+                        this.objMapper.mappearDeNotificacionARespuesta(evento.getNotificacion()))
+                        .id(String.valueOf(evento.getEventId()))
+                        .build());
 
         // Primero envía eventos perdidos, luego mezcla live + heartbeat
         return Flux.concat(missed, Flux.merge(heartbeat, live))
@@ -121,16 +118,11 @@ public class NotificacionRestController {
             }
         }
 
-        Flux<ServerSentEvent<NotificacionDTORespuesta>> live = this.objGestionarNotificacionesCUInt
-                .obtenerStreamNotificacionesPorEscaner(idEscaner)
-                .map(notificacion -> {
-                    long eventId = this.objSseEmitter.getNextEventId();
-                    this.objSseEmitter.bufferEvent(eventId, notificacion);
-                    return ServerSentEvent.<NotificacionDTORespuesta>builder(
-                            this.objMapper.mappearDeNotificacionARespuesta(notificacion))
-                            .id(String.valueOf(eventId))
-                            .build();
-                });
+        Flux<ServerSentEvent<NotificacionDTORespuesta>> live = this.objSseEmitter.obtenerStreamPorEscaner(idEscaner)
+                .map(evento -> ServerSentEvent.<NotificacionDTORespuesta>builder(
+                        this.objMapper.mappearDeNotificacionARespuesta(evento.getNotificacion()))
+                        .id(String.valueOf(evento.getEventId()))
+                        .build());
 
         return Flux.concat(missed, Flux.merge(heartbeat, live))
                 .doOnError(e -> log.error("SSE /stream/escaner/{} terminado por error", idEscaner, e))
