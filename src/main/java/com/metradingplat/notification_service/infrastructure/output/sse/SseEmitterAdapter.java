@@ -38,7 +38,20 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
         // proximo reinicio del servicio. onBackpressureBuffer() absorbe
         // rafagas reales con una cola acotada (mismo tamano que el buffer de
         // reconexion de mas abajo) en vez de fallar por un pico momentaneo.
-        this.sink = Sinks.many().multicast().onBackpressureBuffer(MAX_BUFFER_SIZE);
+        //
+        // autoCancel=false (segundo argumento) es obligatorio: el overload de
+        // 1 argumento equivale a autoCancel=true, que TERMINA el sink para
+        // siempre en cuanto el numero de suscriptores llega a cero (todos los
+        // clientes SSE desconectados a la vez, aunque sea un instante -- ej.
+        // un reload de pagina, o una caida de red breve). Confirmado en vivo
+        // el 2026-09-17: una vez en ese estado, CADA emision posterior
+        // devolvia FAIL_CANCELLED (no FAIL_ZERO_SUBSCRIBER, que si se
+        // silencia mas abajo) y ni un suscriptor NUEVO volvia a recibir nada
+        // -- las senales de signal-processing-service llegaban bien a Kafka
+        // pero jamas salian al frontend, hasta reiniciar el servicio a mano.
+        // Con autoCancel=false el sink sigue vivo y acepta suscriptores
+        // nuevos aunque el conteo haya llegado a cero.
+        this.sink = Sinks.many().multicast().onBackpressureBuffer(MAX_BUFFER_SIZE, false);
     }
 
     @Override
