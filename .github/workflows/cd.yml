@@ -83,7 +83,6 @@ jobs:
             --label project="metradingplat" \
             --label service="notification-service" \
             -e SPRING_PROFILES_ACTIVE="prod" \
-            -e KAFKA_BOOTSTRAP_SERVERS="kafka:29092" \
             -e EUREKA_HOST="directory" \
             -e SSE_AUTH_ENABLED="${{ secrets.SSE_AUTH_ENABLED }}" \
             -e SSE_AUTH_TOKEN="${{ secrets.SSE_AUTH_TOKEN }}" \

@@ -2,13 +2,6 @@ spring:
   mvc:
     async:
       request-timeout: -1
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: notifications-group-v2
-      auto-offset-reset: latest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 eureka:
   client:
