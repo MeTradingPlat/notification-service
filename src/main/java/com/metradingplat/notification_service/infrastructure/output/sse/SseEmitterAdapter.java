@@ -20,10 +20,12 @@ import reactor.core.publisher.Sinks;
 @Slf4j
 public class SseEmitterAdapter implements EmitirNotificacionIntPort {
 
-    private static final int MAX_BUFFER_SIZE = 500;
+    private static final int MAX_BUFFER_SIZE = 2000;
+    private static final long EVICTION_WARN_EVERY = 500;
 
     private final Sinks.Many<EventoNotificado> sink;
     private final AtomicLong eventIdCounter = new AtomicLong();
+    private final AtomicLong evictedEvents = new AtomicLong();
     private final ConcurrentLinkedDeque<EventoBuffered> buffer = new ConcurrentLinkedDeque<>();
 
     public SseEmitterAdapter() {
@@ -85,6 +87,11 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
         this.buffer.addLast(new EventoBuffered(eventId, objNotificacion));
         while (this.buffer.size() > MAX_BUFFER_SIZE) {
             this.buffer.pollFirst();
+            long evicted = this.evictedEvents.incrementAndGet();
+            if (evicted % EVICTION_WARN_EVERY == 1) {
+                log.warn("Buffer de reconexion SSE lleno ({} eventos), se descartan los mas viejos ({} descartados en total)",
+                        MAX_BUFFER_SIZE, evicted);
+            }
         }
     }
 
