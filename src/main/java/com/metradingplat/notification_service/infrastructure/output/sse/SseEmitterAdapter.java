@@ -20,13 +20,23 @@ import reactor.core.publisher.Sinks;
 @Slf4j
 public class SseEmitterAdapter implements EmitirNotificacionIntPort {
 
-    private static final int MAX_BUFFER_SIZE = 2000;
+    // El sink de Reactor (mas abajo) reserva este tamaño al construirse y no
+    // se puede agrandar despues -- por eso arranca generoso, por encima del
+    // universo de simbolos de HOY (~13 mil), en vez de depender de
+    // resolverlo en vivo como el buffer de reconexion.
+    private static final int SINK_BACKPRESSURE_BUFFER_SIZE = 20_000;
     private static final long EVICTION_WARN_EVERY = 500;
 
     private final Sinks.Many<EventoNotificado> sink;
     private final AtomicLong eventIdCounter = new AtomicLong();
     private final AtomicLong evictedEvents = new AtomicLong();
     private final ConcurrentLinkedDeque<EventoBuffered> buffer = new ConcurrentLinkedDeque<>();
+    // Tope del buffer de RECONEXION (distinto del backpressure del sink de
+    // arriba) -- este si se ajusta en vivo al numero real de simbolos que
+    // marketdata-service tiene rastreados (ver TrackedSymbolCountResolver):
+    // no puede haber mas señales simultaneas que simbolos que existen.
+    // Arranca en SINK_BACKPRESSURE_BUFFER_SIZE mientras se resuelve.
+    private volatile int maxBufferSize = SINK_BACKPRESSURE_BUFFER_SIZE;
 
     public SseEmitterAdapter() {
         // directBestEffort() tiene muy poco margen para absorber una rafaga
@@ -53,7 +63,11 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
         // pero jamas salian al frontend, hasta reiniciar el servicio a mano.
         // Con autoCancel=false el sink sigue vivo y acepta suscriptores
         // nuevos aunque el conteo haya llegado a cero.
-        this.sink = Sinks.many().multicast().onBackpressureBuffer(MAX_BUFFER_SIZE, false);
+        this.sink = Sinks.many().multicast().onBackpressureBuffer(SINK_BACKPRESSURE_BUFFER_SIZE, false);
+    }
+
+    public void setMaxBufferSize(int maxBufferSize) {
+        this.maxBufferSize = maxBufferSize;
     }
 
     @Override
@@ -85,12 +99,13 @@ public class SseEmitterAdapter implements EmitirNotificacionIntPort {
 
     public void bufferEvent(long eventId, Notificacion objNotificacion) {
         this.buffer.addLast(new EventoBuffered(eventId, objNotificacion));
-        while (this.buffer.size() > MAX_BUFFER_SIZE) {
+        int limit = this.maxBufferSize;
+        while (this.buffer.size() > limit) {
             this.buffer.pollFirst();
             long evicted = this.evictedEvents.incrementAndGet();
             if (evicted % EVICTION_WARN_EVERY == 1) {
                 log.warn("Buffer de reconexion SSE lleno ({} eventos), se descartan los mas viejos ({} descartados en total)",
-                        MAX_BUFFER_SIZE, evicted);
+                        limit, evicted);
             }
         }
     }
