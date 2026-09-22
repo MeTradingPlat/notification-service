@@ -49,7 +49,14 @@ public class TrackedSymbolCountResolver {
 
     private void attempt() {
         try {
-            List<?> symbols = this.webClientBuilder.build().get()
+            // El universo completo (~13 mil simbolos hoy) supera el limite
+            // por defecto de WebClient para bufferear la respuesta entera en
+            // memoria (256KB) -- confirmado en vivo el 2026-09-22:
+            // DataBufferLimitException apenas arranco. 10MB da margen de
+            // sobra para el crecimiento del universo.
+            List<?> symbols = this.webClientBuilder
+                    .codecs(c -> c.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
+                    .build().get()
                     .uri(this.marketdataServiceUrl + "/marketdata/symbols")
                     .header("X-Gateway-Passed", "true")
                     .retrieve()
